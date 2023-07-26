@@ -277,4 +277,6 @@ p1 <- ggtree(tr1, ladderize = TRUE) +
 
 ggsave("results/csf1-tree-1.pdf", p1, width = 10, height = 11)
 
+write.tree(tr1, file = 'results/csf1-tree-1.nwk')
+
 # end =========================================================================
