@@ -275,13 +275,14 @@ p1 <- ggtree(tr1, ladderize = TRUE) +
                   offset = 0.8, angle = 270, barsize = 1, fontsize = 3) +
   labs(caption = "\nRed circles indicate gene duplication nodes.")
 
-ggsave("results/csf1-tree-1.pdf", p1, width = 10, height = 11)
+fs::dir_create("results/gene-tree")
+ggsave("results/gene-tree/csf1-tree-1.pdf", p1, width = 10, height = 11)
 
 # write files =================================================================
-write.tree(tr1, file = 'results/csf1-tree-1.nwk')
+write.tree(tr1, file = 'results/gene-tree/csf1-tree-1.nwk')
 
 tips %>% 
   filter(newlab %in% tr1$tip.label) %>% 
-  write_tsv("results/csf1-tree-1_tips.tsv")
+  write_tsv("results/gene-tree/csf1-tree-1_tips.tsv")
 
 # end =========================================================================
