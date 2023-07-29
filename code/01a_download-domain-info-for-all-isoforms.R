@@ -96,6 +96,7 @@ get_domains <- function(pid) {
 }
 
 ids <- ids %>% 
+  filter(biotype == "protein_coding") %>% 
   mutate(domains = map(pid, get_domains, .progress = TRUE))
 
 write_rds(ids, "results/isoforms/domains.rds")
