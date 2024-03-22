@@ -21,6 +21,8 @@ knitr::opts_chunk$set(dpi = 300, collapse = TRUE, comment = "#>")
 
 library(tidyverse)
 library(here)
+
+resdir <- here("results/rbp")
 ```
 
 
@@ -47,70 +49,128 @@ isoforms <- kal %>%
            sep = "\\|") %>% 
   dplyr::select(ensembl_transcript_id, length)
 
+# Membrane vs soluble annotation from Yoshitaka:
+# Soluble:
+# ENST00000329608.11
+# ENST00000369802.7
+# ENST00000369801.1
+ 
+# Membrane:
+# ENST00000420111.6
 
 isoforms <- isoforms %>% 
-  mutate(isoform = ifelse(length < 1000, "short", "long"))
+  mutate(isoform = case_when(
+    str_detect(ensembl_transcript_id, "ENST00000329608") ~ "s",
+    str_detect(ensembl_transcript_id, "ENST00000369802") ~ "s",
+    str_detect(ensembl_transcript_id, "ENST00000369801") ~ "s",
+    str_detect(ensembl_transcript_id, "ENST00000420111") ~ "m",
+    .default = NA
+  ))
 
 # add isoform inform to tpm data
 tpm <- left_join(tpm, 
                  select(isoforms, ensembl_transcript_id, isoform),
-                 by = "ensembl_transcript_id")
+                 by = "ensembl_transcript_id") %>% 
+  filter(!is.na(isoform))
+
+tpm <- relocate(tpm, isoform, .after = ensembl_transcript_id)
 
 tpm$href <- NULL
+
+write_tsv(tpm, here(resdir, "tpm_csf1-transcripts_with-isoform-info.tsv"))
 ```
 
 # Analyze ratios
 
 ```{r}
-ratios <- tpm %>% 
-  group_by(rbp, cell_line, expt_type, expt_accession, 
-           tx_quant_accession, rep, isoform) %>% 
+# sum up tpms by isoform
+tpm_iso <- tpm %>% 
+  group_by(rbp, cell_line, expt_type, rep, isoform) %>% 
   summarise(tpm = sum(tpm)) %>% 
-  ungroup() %>% 
-  group_by(rbp, cell_line, expt_type, isoform) %>% 
-  summarise(tpm = mean(tpm)) %>% 
-  ungroup() %>% 
-  pivot_wider(id_cols = c(rbp, cell_line, expt_type),
-              names_from = "isoform", 
-              values_from = "tpm") %>% 
-  mutate(s_vs_l = short/long) %>% 
-  pivot_wider(id_cols = c(rbp, cell_line),
-              names_from = "expt_type",
-              values_from = "s_vs_l") %>% 
-  mutate(kd_vs_ctrl = (kd + 0.0001)/(ctrl + 0.0001)) %>% # to prevent Inf values
-  arrange(kd_vs_ctrl) %>% 
-  mutate(rbp = fct_inorder(rbp)) %>% 
-  mutate(log2_kd_vs_ctrl = log2(kd_vs_ctrl))
+  ungroup()
+
+write_tsv(tpm_iso, here(resdir, "tpm_aggregated-by-isoform.tsv"))
 ```
+
+```{r}
+# calculate m/s ratio in each replicate
+ms <- tpm_iso %>% 
+  pivot_wider(id_cols = c(rbp, cell_line, expt_type, rep),
+              names_from = "isoform", 
+              values_from = "tpm",
+              names_prefix = "tpm_") %>% 
+  mutate(m_vs_s = tpm_m/tpm_s) 
+
+write_tsv(ms, here(resdir, "m-s-ratios.tsv"))
+```
+
+```{r}
+# kd/ctrl ratio of ratio m/s
+# i.e. (m/s)_kd/(m/s)_ctrl
+
+# since the ctrl and kd replicates are not paired, we will divide the two
+# (m/s)_kd replicates by the average of the two (m/s)_ctrl ratios.
+
+kd_vs_ctrl <- ms %>% 
+  mutate(expt_rep = paste0(expt_type, "_", rep)) %>% 
+  pivot_wider(id_cols = c(rbp, cell_line),
+              names_from = "expt_rep",
+              values_from = "m_vs_s",
+              names_prefix = "m_vs_s__") %>% 
+  mutate(m_vs_s__ctrl_mean = map2_dbl(m_vs_s__ctrl_1, m_vs_s__ctrl_2, mean)) %>% 
+  mutate(across(starts_with("m_vs_s"), ~ .x + 0.0001)) %>%  # to avoid Inf with log2
+  mutate(kd_vs_ctrl__m_vs_s__1 = m_vs_s__kd_1/m_vs_s__ctrl_mean,
+         kd_vs_ctrl__m_vs_s__2 = m_vs_s__kd_2/m_vs_s__ctrl_mean) %>% 
+  mutate(mean_kd_vs_ctrl = map2_dbl(kd_vs_ctrl__m_vs_s__1,
+                                    kd_vs_ctrl__m_vs_s__2,
+                                    mean)) %>% 
+  arrange(mean_kd_vs_ctrl) %>% 
+  select(-mean_kd_vs_ctrl) %>% 
+  mutate(rbp = fct_inorder(rbp))
+
+write_tsv(kd_vs_ctrl, here(resdir, "kd-vs-ctrl_m-vs-s_ratios.tsv"))
+```
+
+```{r}
+kd_vs_ctrl_long <- kd_vs_ctrl %>% 
+  pivot_longer(cols = c(kd_vs_ctrl__m_vs_s__1, kd_vs_ctrl__m_vs_s__2),
+               names_to = "rep",
+               values_to = "kd_vs_ctrl__m_vs_s") %>% 
+  select(rbp, cell_line, rep, kd_vs_ctrl__m_vs_s) %>% 
+  mutate(rep = str_remove(rep, "kd_vs_ctrl__m_vs_s__") %>% 
+           as.integer()) %>% 
+  mutate(kd_vs_ctrl__m_vs_s__log2 = log2(kd_vs_ctrl__m_vs_s))
+
+write_tsv(kd_vs_ctrl_long, here(resdir, "kd-vs-ctrl_m-vs-s_ratios_long-format.tsv"))
+```
+
 
 ```{r}
 #| fig-asp: 3
 #| fig-width: 10
-ggplot(ratios, aes(log2_kd_vs_ctrl, rbp)) +
+ggplot(kd_vs_ctrl_long, aes(kd_vs_ctrl__m_vs_s__log2, rbp)) +
   geom_vline(xintercept = 0, linetype = 2, color = "red") +
   geom_point() +
+  stat_summary(
+    geom = "point",
+    fun = "mean",
+    col = "red"
+  ) +
   facet_grid(cols = vars(cell_line)) +
   theme_bw()
 ```
 
 
 ```{r}
-ggplot(ratios, aes(log2(ctrl + 0.0001), log2(kd + 0.0001))) +
-  geom_abline(slope = 1, intercept = 0, linetype = 2, color = "red") +
-  geom_point(alpha = 0.5) +
-  facet_grid(cols = vars(cell_line)) +
-  coord_fixed() +
-  theme_bw()
-```
-
-```{r}
-ggplot(ratios, aes(log2_kd_vs_ctrl)) +
+kd_vs_ctrl_long %>% 
+  group_by(rbp, cell_line) %>% 
+  summarise(kd_vs_ctrl__m_vs_s__log2 = mean(kd_vs_ctrl__m_vs_s__log2)) %>% 
+  ggplot(aes(kd_vs_ctrl__m_vs_s__log2)) +
   geom_histogram(binwidth = 0.25) +
   geom_vline(xintercept = 0, linetype = 2, color = "red") +
   facet_grid(rows = vars(cell_line)) +
   theme_bw()
 ```
-
 
 # Session Info
 ```{r session_info, eval=TRUE}
