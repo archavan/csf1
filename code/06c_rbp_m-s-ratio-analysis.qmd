@@ -1,0 +1,118 @@
+---
+title: "M/S ratio analysis"
+author: Arun Chavan
+format: 
+  html:
+    theme: cosmo
+    self-contained: true
+toc: true
+editor: source
+fontsize: 0.95em
+editor_options: 
+  chunk_output_type: inline
+---
+
+Started: 2024-03-22  
+Last edited: `r format(Sys.time())`
+
+# Setup
+```{r, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(dpi = 300, collapse = TRUE, comment = "#>")
+
+library(tidyverse)
+library(here)
+```
+
+
+# Data
+```{r}
+#| message: false
+#| warning: false
+tpm <- read_tsv(here("results/rbp/tpm_csf1-transcripts.tsv"))
+```
+
+# Isoform information
+```{r}
+#| message: false
+#| warning: false
+
+# read full kallisto data from one of the experiments and get transcripts
+# lengths from there
+kal <- read_tsv(tpm$href[1])
+isoforms <- kal %>% 
+  filter(str_detect(target_id, "\\|CSF1\\|")) %>% 
+  separate(target_id,
+           into = c("ensembl_transcript_id", "ensembl_gene_id",
+                    rep(NA, 7)), 
+           sep = "\\|") %>% 
+  dplyr::select(ensembl_transcript_id, length)
+
+
+isoforms <- isoforms %>% 
+  mutate(isoform = ifelse(length < 1000, "short", "long"))
+
+# add isoform inform to tpm data
+tpm <- left_join(tpm, 
+                 select(isoforms, ensembl_transcript_id, isoform),
+                 by = "ensembl_transcript_id")
+
+tpm$href <- NULL
+```
+
+# Analyze ratios
+
+```{r}
+ratios <- tpm %>% 
+  group_by(rbp, cell_line, expt_type, expt_accession, 
+           tx_quant_accession, rep, isoform) %>% 
+  summarise(tpm = sum(tpm)) %>% 
+  ungroup() %>% 
+  group_by(rbp, cell_line, expt_type, isoform) %>% 
+  summarise(tpm = mean(tpm)) %>% 
+  ungroup() %>% 
+  pivot_wider(id_cols = c(rbp, cell_line, expt_type),
+              names_from = "isoform", 
+              values_from = "tpm") %>% 
+  mutate(s_vs_l = short/long) %>% 
+  pivot_wider(id_cols = c(rbp, cell_line),
+              names_from = "expt_type",
+              values_from = "s_vs_l") %>% 
+  mutate(kd_vs_ctrl = (kd + 0.0001)/(ctrl + 0.0001)) %>% # to prevent Inf values
+  arrange(kd_vs_ctrl) %>% 
+  mutate(rbp = fct_inorder(rbp)) %>% 
+  mutate(log2_kd_vs_ctrl = log2(kd_vs_ctrl))
+```
+
+```{r}
+#| fig-asp: 3
+#| fig-width: 10
+ggplot(ratios, aes(log2_kd_vs_ctrl, rbp)) +
+  geom_vline(xintercept = 0, linetype = 2, color = "red") +
+  geom_point() +
+  facet_grid(cols = vars(cell_line)) +
+  theme_bw()
+```
+
+
+```{r}
+ggplot(ratios, aes(log2(ctrl + 0.0001), log2(kd + 0.0001))) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2, color = "red") +
+  geom_point(alpha = 0.5) +
+  facet_grid(cols = vars(cell_line)) +
+  coord_fixed() +
+  theme_bw()
+```
+
+```{r}
+ggplot(ratios, aes(log2_kd_vs_ctrl)) +
+  geom_histogram(binwidth = 0.25) +
+  geom_vline(xintercept = 0, linetype = 2, color = "red") +
+  facet_grid(rows = vars(cell_line)) +
+  theme_bw()
+```
+
+
+# Session Info
+```{r session_info, eval=TRUE}
+sessionInfo()
+```
