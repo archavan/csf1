@@ -172,6 +172,61 @@ kd_vs_ctrl_long %>%
   theme_bw()
 ```
 
+## M/S ratio plots
+
+```{r}
+# m/s ratio plots for each RBP
+
+plot_ms_ratio_for_rbp <- function(.rbp) {
+  ms %>% 
+    filter(rbp == .rbp) %>% 
+    ggplot(aes(expt_type, m_vs_s)) +
+    geom_jitter(width = 0.05, alpha = 0.8) +
+    facet_grid(cols = vars(cell_line)) +
+    labs(title = .rbp) +
+    theme_bw()
+}
+
+ms_plots <- tibble(rbp = unique(ms$rbp))
+
+ms_plots <- ms_plots %>% 
+  mutate(gg = map(rbp, plot_ms_ratio_for_rbp))
+
+fs::dir_create(here(resdir, "ms_plots"))
+walk2(ms_plots$gg, 
+      ms_plots$rbp,
+      ~ ggsave(here(resdir, "ms_plots", paste0(.y, ".pdf")),
+               .x, width = 5.5, height = 3.5))
+```
+
+## t-tests
+
+```{r}
+t_test_ms_ratio <- function(x) {
+  ctrl_ratios <- x$m_vs_s[which(x$expt_type == "ctrl")]
+  kd_ratios <- x$m_vs_s[which(x$expt_type == "kd")]
+    
+  tres <- t.test(x = ctrl_ratios, y = kd_ratios)
+  tres <- broom::tidy(tres)
+  return(select(tres, estimate, statistic, p.value))
+}
+
+t_res <- nest(ms, .by = c(rbp, cell_line)) %>% 
+  mutate(tres = map(data, t_test_ms_ratio)) %>% 
+  unnest_wider(tres)
+
+t_res <- t_res  %>% 
+  nest(.by = cell_line) %>% 
+  mutate(data = map(data, function(x) mutate(x, p_adjust = p.adjust(p.value, method = "BH")))) %>% 
+  unnest(data)
+
+t_res <- t_res %>% 
+  arrange(p.value)
+
+write_tsv(t_res, here(resdir, "t-test-results.tsv"))
+```
+
+
 # Session Info
 ```{r session_info, eval=TRUE}
 sessionInfo()
