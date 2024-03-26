@@ -21,6 +21,7 @@ knitr::opts_chunk$set(dpi = 300, collapse = TRUE, comment = "#>")
 
 library(tidyverse)
 library(here)
+library(ggrepel)
 
 resdir <- here("results/rbp")
 ```
@@ -171,6 +172,39 @@ kd_vs_ctrl_long %>%
   facet_grid(rows = vars(cell_line)) +
   theme_bw()
 ```
+
+## KD/CTRL ratio plots between the two cell types
+
+```{r}
+#| fig-asp: 1
+#| fig-width: 9
+
+kd_vs_ctrl_mean <- kd_vs_ctrl_long %>% 
+  group_by(rbp, cell_line) %>% 
+  summarise(kd_vs_ctrl__m_vs_s__log2 = mean(kd_vs_ctrl__m_vs_s__log2)) %>%
+  ungroup() %>% 
+  pivot_wider(names_from = "cell_line",
+              values_from = "kd_vs_ctrl__m_vs_s__log2") %>% 
+  mutate(product_of_ratios_between_cell_lines = K562 * HepG2) %>% 
+  arrange(-product_of_ratios_between_cell_lines)
+
+write_tsv(kd_vs_ctrl_mean, here(resdir, "kd-vs-ctrl_m-vs-s_ratios_mean.tsv"))
+  
+plot_kd_vs_ctrl_mean <- ggplot(kd_vs_ctrl_mean, aes(K562, HepG2, label = rbp)) +
+  geom_vline(xintercept = 0, linetype = 2, color = "red") +
+  geom_hline(yintercept = 0, linetype = 2, color = "red") +
+  geom_point() +
+  geom_text_repel() +
+  coord_equal() +
+  labs(title = "log2(kd_vs_ctrl__m_vs_s)") +
+  theme_bw()
+
+ggsave(here(resdir, "kd-vs-ctrl_m-vs-s_ratios_mean.pdf"),
+       plot_kd_vs_ctrl_mean, width = 10, height = 10)
+
+plot_kd_vs_ctrl_mean
+```
+
 
 ## M/S ratio plots
 
