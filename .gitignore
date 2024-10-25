@@ -51,6 +51,7 @@ rsconnect/
 ### modified by me below this. Default above this. ===========================
 
 **/results
+**/data
 
 # info and notes folders
 **/docs
@@ -80,6 +81,9 @@ rsconnect/
 *.docx
 *.doc
 *.html
+*.h5
+*.tsv
+*.json
 
 # seq data
 *.gz
