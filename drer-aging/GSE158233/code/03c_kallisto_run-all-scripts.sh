@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+cd /home/arc78/csf1/drer-aging/GSE158233/code/03b_kallisto_scripts
+
+sbatch SRR12672449.sh
+sbatch SRR12672450.sh
+sbatch SRR12672451.sh
+sbatch SRR12672452.sh
+sbatch SRR12672453.sh
+sbatch SRR12672454.sh
+sbatch SRR12672455.sh
+sbatch SRR12672456.sh
+sbatch SRR12672457.sh
+sbatch SRR12672458.sh
+sbatch SRR12672459.sh
+sbatch SRR12672460.sh
+sbatch SRR12672461.sh
+sbatch SRR12672462.sh
+sbatch SRR12672463.sh
+sbatch SRR12672464.sh
+sbatch SRR12672465.sh
+sbatch SRR12672466.sh
+sbatch SRR12672467.sh
+sbatch SRR12672468.sh
+sbatch SRR12672469.sh
+sbatch SRR12672470.sh
+sbatch SRR12672471.sh
+sbatch SRR12672472.sh
+sbatch SRR12672473.sh
+sbatch SRR12672474.sh
+sbatch SRR12672475.sh
+sbatch SRR12672476.sh
+sbatch SRR12672477.sh
+sbatch SRR12672478.sh
