@@ -7,14 +7,19 @@
 
 # setup =======================================================================
 library(tidyverse)
+library(here)
 library(ape)
 library(ggtree)
 library(aplot)
 
+basedir <- here("gene-trees")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
+
 # data ========================================================================
-ids <- read_tsv("results/isoforms/l2-lengths.tsv")
-spp <- read_tsv("results/l2-length/species-filtered.tsv")
-tr <- read.tree("results/l2-length/species-tree.nwk")
+ids <- read_tsv(here(resdir, "isoforms", "l2-lengths.tsv"))
+spp <- read_tsv(here(resdir, "l2-length", "species-filtered.tsv"))
+tr <- read.tree(here(resdir, "l2-length", "species-tree.nwk"))
 tr$tip.label <- str_replace_all(tr$tip.label, "_", " ")
 
 # match species names across datasets =========================================
@@ -100,7 +105,7 @@ p_tr <- ggtree(tr, ladderize = TRUE) +
 pp <- p_l2 %>% 
   insert_left(p_tr, width = 2)
 
-ggsave("results/l2-length/l2-length-on-species-tree.pdf", pp,
+ggsave(here(resdir, "l2-length", "l2-length-on-species-tree.pdf"), pp,
        width = 13, height = 10)
 
 # end =========================================================================

@@ -15,11 +15,13 @@ library(readxl)
 library(parallel)
 library(parallelly)
 
-resdir <- here("results/rbp")
+basedir <- here("rbp")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
 fs::dir_create(resdir)
 
 # data ========================================================================
-expt_ids <- read_xlsx("data/rbp/41586_2020_2077_MOESM4_ESM.xlsx", 
+expt_ids <- read_xlsx(here(datadir, "rbp", "41586_2020_2077_MOESM4_ESM.xlsx"),
                      sheet = "KD-RNA-seq") %>% 
   janitor::clean_names() %>% 
   select(rbp, cell_line, rna_seq_exp, control_exp) %>% 

@@ -10,17 +10,22 @@
 
 # setup =======================================================================
 library(tidyverse)
+library(here)
 library(ape)
 library(ggtree)
 library(aplot)
 
+basedir <- here("gene-trees")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
+
 # data ========================================================================
-tr <- read.tree("results/gene-tree/csf1-tree-1.nwk")
+tr <- read.tree(here(resdir, "gene-tree", "csf1-tree-1.nwk"))
 tr$tip.label <- str_replace_all(tr$tip.label, "_", " ")
 
-ids <- read_tsv("results/isoforms/l2-lengths.tsv")
+ids <- read_tsv(here(resdir, "isoforms", "l2-lengths.tsv"))
 
-spp <- read_csv("data/ensembl/ensembl-species.csv") %>% 
+spp <- read_csv(here(datadir, "ensembl", "ensembl-species.csv")) %>%
   janitor::clean_names() %>% 
   select(common_name, scientific_name) %>% 
   mutate(common_name = case_when(
@@ -40,7 +45,7 @@ tr$tip.label <- str_replace(tr$tip.label, "(^ENS.+?) .*", "\\1")
 # For not all proteins that are tips in this tree we could calculate the L2
 # length. We need to drop them.
 tr <- keep.tip(tr, tr$tip.label[tr$tip.label %in% ids$pid])
-write.tree(tr, "results/gene-tree/csf1-tree-2_only-tips-with-l2-lengths.nwk")
+write.tree(tr, here(resdir, "gene-tree", "csf1-tree-2_only-tips-with-l2-lengths.nwk"))
 
 pid_gid_mapping <- ids %>% 
   select(pid, gid) %>% 
@@ -156,8 +161,8 @@ p_tr <- ggtree(tr, ladderize = TRUE) +
 pp <- p_l2 %>% 
   insert_left(p_tr, width = 2)
 
-fs::dir_create("results/l2-length")
-ggsave("results/l2-length/l2-length-on-gene-tree.pdf", pp,
+fs::dir_create(here(resdir, "l2-length"))
+ggsave(here(resdir, "l2-length", "l2-length-on-gene-tree.pdf"), pp,
        width = 12, height = 10)
 
 # end =========================================================================

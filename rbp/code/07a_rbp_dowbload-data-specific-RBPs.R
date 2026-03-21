@@ -8,11 +8,15 @@ library(here)
 library(parallel)
 library(parallelly)
 
-resdir <- here("results/rbp/tpm")
-fs::dir_create(resdir)
+basedir <- here("rbp")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
+
+tpmdir <- here(resdir, "tpm")
+fs::dir_create(tpmdir)
 
 # data ========================================================================
-ids <- read_tsv(here("results/rbp/expt-and-tx-quant-accessions.tsv"))
+ids <- read_tsv(here(resdir, "expt-and-tx-quant-accessions.tsv"))
 
 rbps <- c("PPIL4", "MTPAP")
 
@@ -45,7 +49,7 @@ dat <- ids %>%
 # write data ==================================================================
 for (i in seq_len(nrow(dat))) {
   write_tsv(dat$tpm[[i]], 
-            here(resdir, paste0(dat$rbp[i], 
+            here(tpmdir, paste0(dat$rbp[i],
                                 "_", 
                                 dat$cell_line[i], 
                                 "_", 

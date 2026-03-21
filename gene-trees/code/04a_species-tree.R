@@ -8,10 +8,15 @@
 
 # setup =======================================================================
 library(tidyverse)
+library(here)
 library(ape)
 
+basedir <- here("gene-trees")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
+
 # data ========================================================================
-spp <- read_csv("data/ensembl/ensembl-species.csv") %>% 
+spp <- read_csv(here(datadir, "ensembl", "ensembl-species.csv")) %>%
   janitor::clean_names()
 
 # keep species ================================================================
@@ -72,10 +77,10 @@ spp_filtered <- filter(spp, common_name %in% keep_species)
 
 spp_filtered %>% 
   select(scientific_name) %>% 
-  write_tsv("results/l2-length/species-for-tree.tsv", col_names = FALSE)
+  write_tsv(here(resdir, "l2-length", "species-for-tree.tsv"), col_names = FALSE)
 
 # read tree downloaded from timetree.org ======================================
-tr <- read.tree("data/species-tree_timetree-org.nwk")
+tr <- read.tree(here(datadir, "species-tree_timetree-org.nwk"))
 
 # make sure tip labels match ==================================================
 tr$tip.label <- str_replace_all(tr$tip.label, "_", " ")
@@ -94,7 +99,7 @@ tr$tip.label <- spp_names[tr$tip.label]
 
 # write files =================================================================
 spp_filtered %>% 
-  write_tsv("results/l2-length/species-filtered.tsv")
+  write_tsv(here(resdir, "l2-length", "species-filtered.tsv"))
 
-write.tree(tr, "results/l2-length/species-tree.nwk")
+write.tree(tr, here(resdir, "l2-length", "species-tree.nwk"))
 # end =========================================================================

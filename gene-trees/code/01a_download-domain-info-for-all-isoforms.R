@@ -10,12 +10,17 @@
 
 # setup =======================================================================
 library(tidyverse)
+library(here)
 library(httr)
 library(xml2)
 library(jsonlite)
 
+basedir <- here("gene-trees")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
+
 # data ========================================================================
-tr <- ape::read.tree("data/ensembl/CSF1_gene-tree.nh")
+tr <- ape::read.tree(here(datadir, "ensembl", "CSF1_gene-tree.nh"))
 
 # get gene ids from protein ids ===============================================
 ids <- tibble(pid = tr$tip.label)
@@ -51,8 +56,8 @@ get_id_info <- function(id) {
 ids <- ids %>% 
   mutate(res = map(gid, get_id_info, .progress = TRUE)) 
 
-fs::dir_create("results/isoforms")
-write_rds(ids, "results/isoforms/gid-info.rds")
+fs::dir_create(here(resdir, "isoforms"))
+write_rds(ids, here(resdir, "isoforms", "gid-info.rds"))
 
 # pull id info from GET results ===============================================
 pull_species <- function(x) x$species
@@ -83,7 +88,7 @@ ids <- ids %>%
 
 ids <- filter(ids, !is.na(pid))
 
-write_tsv(ids, "results/isoforms/isoform-ids.tsv")
+write_tsv(ids, here(resdir, "isoforms", "isoform-ids.tsv"))
 
 # get domain info =============================================================
 get_domains <- function(pid) {
@@ -99,7 +104,7 @@ ids <- ids %>%
   filter(biotype == "protein_coding") %>% 
   mutate(domains = map(pid, get_domains, .progress = TRUE))
 
-write_rds(ids, "results/isoforms/domains.rds")
+write_rds(ids, here(resdir, "isoforms", "domains.rds"))
 
 # end =========================================================================
 

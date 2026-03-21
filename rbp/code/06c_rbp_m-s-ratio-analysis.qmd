@@ -23,7 +23,9 @@ library(tidyverse)
 library(here)
 library(ggrepel)
 
-resdir <- here("results/rbp")
+basedir <- here("rbp")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
 ```
 
 
@@ -31,7 +33,7 @@ resdir <- here("results/rbp")
 ```{r}
 #| message: false
 #| warning: false
-tpm <- read_tsv(here("results/rbp/tpm_csf1-transcripts.tsv"))
+tpm <- read_tsv(here(resdir, "tpm_csf1-transcripts.tsv"))
 ```
 
 # Isoform information

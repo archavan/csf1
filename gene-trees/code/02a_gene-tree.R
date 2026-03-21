@@ -4,13 +4,18 @@
 
 # setup =======================================================================
 library(tidyverse)
+library(here)
 library(ape)
 library(ggtree)
 
+basedir <- here("gene-trees")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
+
 # data ========================================================================
-tr <- read.tree("data/ensembl/CSF1_gene-tree.nh")
-sp <- read_csv("data/ensembl/ensembl-species.csv") %>% 
-  janitor::clean_names() %>% 
+tr <- read.tree(here(datadir, "ensembl", "CSF1_gene-tree.nh"))
+sp <- read_csv(here(datadir, "ensembl", "ensembl-species.csv")) %>%
+  janitor::clean_names() %>%
   select(common_name, scientific_name)
 
 # organize names ==============================================================
@@ -275,14 +280,14 @@ p1 <- ggtree(tr1, ladderize = TRUE) +
                   offset = 0.8, angle = 270, barsize = 1, fontsize = 3) +
   labs(caption = "\nRed circles indicate gene duplication nodes.")
 
-fs::dir_create("results/gene-tree")
-ggsave("results/gene-tree/csf1-tree-1.pdf", p1, width = 10, height = 11)
+fs::dir_create(here(resdir, "gene-tree"))
+ggsave(here(resdir, "gene-tree", "csf1-tree-1.pdf"), p1, width = 10, height = 11)
 
 # write files =================================================================
-write.tree(tr1, file = 'results/gene-tree/csf1-tree-1.nwk')
+write.tree(tr1, file = here(resdir, "gene-tree", "csf1-tree-1.nwk"))
 
-tips %>% 
-  filter(newlab %in% tr1$tip.label) %>% 
-  write_tsv("results/gene-tree/csf1-tree-1_tips.tsv")
+tips %>%
+  filter(newlab %in% tr1$tip.label) %>%
+  write_tsv(here(resdir, "gene-tree", "csf1-tree-1_tips.tsv"))
 
 # end =========================================================================

@@ -10,7 +10,9 @@ library(here)
 library(parallel)
 library(parallelly)
 
-resdir <- here("results/rbp")
+basedir <- here("rbp")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
 
 # data ========================================================================
 ids <- read_tsv(here(resdir, "expt-and-tx-quant-accessions.tsv"))

@@ -7,9 +7,14 @@
 
 # setup =======================================================================
 library(tidyverse)
+library(here)
+
+basedir <- here("gene-trees")
+datadir <- here(basedir, "data")
+resdir  <- here(basedir, "results")
 
 # data ========================================================================
-ids <- read_rds("results/isoforms/domains.rds")
+ids <- read_rds(here(resdir, "isoforms", "domains.rds"))
 
 # process domain info =========================================================
 # clean up columns
@@ -65,7 +70,7 @@ ids <- ids %>%
   filter(map_int(domains, ~ sum(str_detect(.x$id, "PF05337"))) == 1) %>% 
   filter(map_int(domains, ~ sum(str_detect(.x$id, "TMhelix"))) == 1)
 
-write_rds(ids, "results/isoforms/domains_filtered.rds")
+write_rds(ids, here(resdir, "isoforms", "domains_filtered.rds"))
 
 # calculate the length of L2 linker domain ====================================
 calc_l2_length <- function(df) {
@@ -77,6 +82,6 @@ calc_l2_length <- function(df) {
 ids <- ids %>% 
   mutate(l2_len = map_int(domains, calc_l2_length))
 
-write_tsv(select(ids, -domains), "results/isoforms/l2-lengths.tsv")
+write_tsv(select(ids, -domains), here(resdir, "isoforms", "l2-lengths.tsv"))
 
 # end =========================================================================
