@@ -26,8 +26,8 @@ genes <- select(tpm, ensembl_gene_id, external_gene_name)
 # DESeq: pairwise =============================================================
 # set up receptacle
 pw <- tibble(
-  x = c("0h", "0h", "0h", "0h", "0h"),
-  y = c("4h", "8h", "12h", "24h", "48h"),
+  x = c("0h", "0h", "0h", "0h", "0h", "12h"),
+  y = c("4h", "8h", "12h", "24h", "48h", "48h"),
   coef = paste0("tx_", y, "_vs_", x)
 )
 
