@@ -1,6 +1,8 @@
 # csf1
 
-Code associated with Kimura et al.
+Code associated with Kimura et al., *BioRxiv* (2026)
+
+Preprint: [https://doi.org/10.64898/2026.10.13.758691](https://doi.org/10.64898/2026.10.13.758691)
 
 **Title**: Protein aggregate removal by macrophages via trogocytosis
 
